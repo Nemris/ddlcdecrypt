@@ -4,6 +4,7 @@ import pathlib
 
 
 UNITYFS_KEY = 0x28
+UNITYFS_MAGIC = b"UnityFS"
 DECRYPTED_EXTENSION = ".bin"  # No specific extension for UnityFS files.
 
 
@@ -36,6 +37,24 @@ def decrypt_file(src: pathlib.Path, dest: pathlib.Path, key: int) -> None:
     with src.open("rb") as infile:
         with dest.open("wb") as outfile:
             outfile.write(xor(infile.read(), key))
+
+
+def can_key_decrypt_asset(asset: pathlib.Path, key: int) -> bool:
+    """
+    Check if a key successfully decrypts a UnityFS file's signature.
+
+    Args:
+        asset: Encrypted asset file.
+        key: Key to test.
+
+    Returns:
+        True if the key successfully decrypts the asset's signature,
+            False otherwise.
+    """
+    with asset.open("rb") as file:
+        data = file.read(len(UNITYFS_MAGIC))
+
+    return xor(data, key) == UNITYFS_MAGIC
 
 
 def compose_destination_path(src: pathlib.Path, destdir: pathlib.Path) -> pathlib.Path:

@@ -40,23 +40,37 @@ def read_args() -> argparse.Namespace:
             type=pathlib.Path,
             help="directory where to place the decrypted assets"
     )
+    parser.add_argument(
+            "-f",
+            "--force-decrypt",
+            action="store_true",
+            help="skip verifying the decryption key and decrypt anyway"
+    )
 
     return parser.parse_args()
 
 
-def main(assets: list[pathlib.Path], destdir: pathlib.Path) -> None:
+def main(assets: list[pathlib.Path], destdir: pathlib.Path, force_decrypt: bool) -> None:
     """
     Core of ddlcdecrypt.
 
     Args:
         assets: Asset files to decrypt.
         destdir: Directory where to place the decrypted assets.
+        force_decrypt: Whether to force the decryption process.
     """
     if not destdir.exists():
         print_warn(f"'{destdir}' is missing, creating now.\n")
         destdir.mkdir()
 
     for encrypted_asset in assets:
+        if (
+                not force_decrypt
+                and not crypto.can_key_decrypt_asset(encrypted_asset, crypto.UNITYFS_KEY)
+        ):
+            print_warn(f"skipping '{encrypted_asset}': invalid key.\n")
+            continue
+
         decrypted_asset = crypto.compose_destination_path(encrypted_asset, destdir)
 
         print(f"Decrypting '{encrypted_asset}' and storing in '{decrypted_asset}'...")
@@ -70,4 +84,4 @@ def wrapper() -> None:
     """ Entrypoint for ddlcdecrypt. """
     args = read_args()
 
-    main(args.assets, args.destdir)
+    main(args.assets, args.destdir, args.force_decrypt)
