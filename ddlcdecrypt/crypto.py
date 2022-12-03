@@ -1,10 +1,12 @@
 """ Facilities for decryption and output file handling. """
 
 import pathlib
+import typing
 
 
 UNITYFS_KEY = 0x28
 UNITYFS_MAGIC = b"UnityFS"
+ENCRYPTED_UNITYFS_MAGIC = xor(UNITYFS_MAGIC, UNITYFS_KEY)
 DECRYPTED_EXTENSION = ".bin"  # No specific extension for UnityFS files.
 
 
@@ -25,7 +27,7 @@ def xor(data: bytes, key: int) -> bytes:
     )
 
 
-def decrypt_file(src: pathlib.Path, dest: pathlib.Path, key: int) -> None:
+def decrypt_file(src: pathlib.Path, dest: pathlib.Path, key: int, check_magic: bool) -> None:
     """
     Decrypt the file at src with key, writing the result to dest.
 
@@ -33,28 +35,39 @@ def decrypt_file(src: pathlib.Path, dest: pathlib.Path, key: int) -> None:
         src: File to decrypt.
         dest: Where to save the decrypted data.
         key: Integer key to decrypt the data with.
+        check_magic: Whether to check the file's signature prior to
+            decrypting it.
+
+    Raises:
+        OSError: When there are issues during handling of the source or
+            destination files.
+        ValueError: When a mismatch is detected in the source file's
+            signature.
     """
     with src.open("rb") as infile:
+        if check_magic and not is_magic_valid(infile):
+            raise ValueError(f"'{src}': invalid magic for key 0x{UNITYFS_KEY:02x}")
+
         with dest.open("wb") as outfile:
             outfile.write(xor(infile.read(), key))
 
 
-def can_key_decrypt_asset(asset: pathlib.Path, key: int) -> bool:
+def is_magic_valid(file: typing.BinaryIO) -> bool:
     """
-    Check if a key successfully decrypts a UnityFS file's signature.
+    Check if an encrypted asset contains the expected signature.
 
     Args:
-        asset: Encrypted asset file.
-        key: Key to test.
+        file: Asset to check.
 
     Returns:
-        True if the key successfully decrypts the asset's signature,
-            False otherwise.
+        True if the asset contains the expected signature, False
+            otherwise.
     """
-    with asset.open("rb") as file:
-        data = file.read(len(UNITYFS_MAGIC))
+    position = file.tell()
+    magic = file.read(len(ENCRYPTED_UNITYFS_MAGIC))
+    file.seek(position)
 
-    return xor(data, key) == UNITYFS_MAGIC
+    return magic == ENCRYPTED_UNITYFS_MAGIC
 
 
 def compose_destination_path(src: pathlib.Path, destdir: pathlib.Path) -> pathlib.Path:

@@ -14,7 +14,6 @@ def read_args() -> argparse.Namespace:
     Returns:
         The parsed command-line arguments.
     """
-
     parser = argparse.ArgumentParser(
             description="Decrypt DDLC Plus! UnityFS assets."
     )
@@ -31,10 +30,11 @@ def read_args() -> argparse.Namespace:
             help="directory where to place the decrypted assets"
     )
     parser.add_argument(
-            "-f",
-            "--force-decrypt",
-            action="store_true",
-            help="skip verifying the decryption key and decrypt anyway"
+            "--no-verify",
+            action="store_false",
+            default=True,
+            help="skip asset file signature check, decrypt even on invalid key",
+            dest="verify"
     )
     parser.add_argument(
             "-v",
@@ -49,34 +49,34 @@ def read_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(assets: list[pathlib.Path], destdir: pathlib.Path, force_decrypt: bool) -> None:
+def main(assets: list[pathlib.Path], destdir: pathlib.Path, verify_assets: bool) -> None:
     """
     Core of ddlcdecrypt.
 
     Args:
         assets: Asset files to decrypt.
         destdir: Directory where to place the decrypted assets.
-        force_decrypt: Whether to force the decryption process.
+        verify_assets: Whether to check if the assets can be decrypted.
     """
     if not destdir.exists():
         logging.warning("'%s' not found - creating now.\n", destdir)
         destdir.mkdir()
 
     for encrypted_asset in assets:
-        if (
-                not force_decrypt
-                and not crypto.can_key_decrypt_asset(encrypted_asset, crypto.UNITYFS_KEY)
-        ):
-            logging.warning("'%s': invalid key - skipping.\n", encrypted_asset)
-            continue
-
         decrypted_asset = crypto.compose_destination_path(encrypted_asset, destdir)
 
         logging.info("'%s' -> '%s'", encrypted_asset, decrypted_asset)
         try:
-            crypto.decrypt_file(encrypted_asset, decrypted_asset, crypto.UNITYFS_KEY)
+            crypto.decrypt_file(
+                    encrypted_asset,
+                    decrypted_asset,
+                    crypto.UNITYFS_KEY,
+                    verify_assets
+            )
         except OSError as exception:
             logging.error("'%s': %s", exception.filename, exception.strerror)
+        except ValueError as exception:
+            logging.warning("%s", exception)
 
 
 def wrapper() -> None:
@@ -87,4 +87,4 @@ def wrapper() -> None:
             level=args.loglevel
     )
 
-    main(args.assets, args.destdir, args.force_decrypt)
+    main(args.assets, args.destdir, args.verify)
