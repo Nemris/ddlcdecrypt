@@ -68,7 +68,8 @@ def compose_destination_path(src: pathlib.Path, destdir: pathlib.Path) -> pathli
     Returns:
         The full path and filename to store the decrypted asset as.
     """
-    return (destdir
+    return (
+            destdir
             .joinpath(src.name)
             .with_suffix(DECRYPTED_EXTENSION)
     )
