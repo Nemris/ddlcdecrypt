@@ -6,7 +6,6 @@ import typing
 
 UNITYFS_KEY = 0x28
 UNITYFS_MAGIC = b"UnityFS"
-ENCRYPTED_UNITYFS_MAGIC = xor(UNITYFS_MAGIC, UNITYFS_KEY)
 DECRYPTED_EXTENSION = ".bin"  # No specific extension for UnityFS files.
 
 
@@ -63,11 +62,13 @@ def is_magic_valid(file: typing.BinaryIO) -> bool:
         True if the asset contains the expected signature, False
             otherwise.
     """
+    encrypted_magic = xor(UNITYFS_MAGIC, UNITYFS_KEY)
+
     position = file.tell()
-    magic = file.read(len(ENCRYPTED_UNITYFS_MAGIC))
+    magic = file.read(len(encrypted_magic))
     file.seek(position)
 
-    return magic == ENCRYPTED_UNITYFS_MAGIC
+    return magic == encrypted_magic
 
 
 def compose_destination_path(src: pathlib.Path, destdir: pathlib.Path) -> pathlib.Path:
