@@ -83,7 +83,7 @@ def wrapper() -> None:
     """ Entrypoint for ddlcdecrypt. """
     args = read_args()
     logging.basicConfig(
-            format="[%(levelname)s] %(message)",
+            format="[%(levelname)s] %(message)s",
             level=args.loglevel
     )
 
