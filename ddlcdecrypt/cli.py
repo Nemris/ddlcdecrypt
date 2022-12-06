@@ -60,7 +60,7 @@ def main(assets: list[pathlib.Path], destdir: pathlib.Path, verify_assets: bool)
     """
     if not destdir.exists():
         logging.warning("'%s' not found - creating now.\n", destdir)
-        destdir.mkdir()
+        destdir.mkdir(parents=True)
 
     for encrypted_asset in assets:
         decrypted_asset = crypto.compose_destination_path(encrypted_asset, destdir)

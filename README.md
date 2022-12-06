@@ -31,7 +31,7 @@ ddlcdecrypt -h
 ```
 
 Here, valid assets files are those ending in .cy. Additionally, the output directory shall be
-created if missing.
+created if missing, including any intermediate directories.
 
 Once processed, the resulting .bin files can be loaded and inspected in your Unity assets explorer
 of choice.
