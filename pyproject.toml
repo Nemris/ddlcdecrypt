@@ -16,3 +16,6 @@ pylint = "^2.15.7"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+ddlcdecrypt = "ddlcdecrypt.cli:wrapper"
